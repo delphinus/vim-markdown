@@ -18,14 +18,20 @@ unlet! b:current_syntax
 if !exists('g:markdown_fenced_languages')
   let g:markdown_fenced_languages = []
 endif
+let s:done_include = {}
 for s:type in map(copy(g:markdown_fenced_languages),'matchstr(v:val,"[^=]*$")')
+  if has_key(s:done_include, matchstr(s:type,'[^.]*'))
+    continue
+  endif
   if s:type =~ '\.'
     let b:{matchstr(s:type,'[^.]*')}_subtype = matchstr(s:type,'\.\zs.*')
   endif
   exe 'syn include @markdownHighlight'.substitute(s:type,'\.','','g').' syntax/'.matchstr(s:type,'[^.]*').'.vim'
   unlet! b:current_syntax
+  let s:done_include[matchstr(s:type,'[^.]*')] = 1
 endfor
 unlet! s:type
+unlet! s:done_include
 
 " Let the user determine which markers to conceal and which not to conceal:
 "   #: headings, *: bullets, d: id declarations, l: links, a: automatic links,
@@ -42,7 +48,10 @@ endif
 " Decide whether to render list bullets as a proper bullet character.
 let s:conceal_bullets = (&encoding == 'utf-8' && s:markdown_conceal =~ '*')
 
-syn sync minlines=10
+if !exists('g:markdown_minlines')
+  let g:markdown_minlines = 50
+endif
+execute 'syn sync minlines=' . g:markdown_minlines
 syn case ignore
 
 syn match markdownValid '[<>]\c[a-z/$!]\@!'
